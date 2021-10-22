@@ -5,6 +5,7 @@
   "types": "test-dist/types/components.d.ts",
   "collection": "test-dist/collection/collection-manifest.json",
   "scripts": {
+    "clean": "rm -rf test-custom-elements test-dist test-www tmp-compiled-tests",
     "start": "node ../../bin/stencil build --dev --watch --serve --es5",
     "build.app": "npm run compile.test-app && node ../../bin/stencil build --debug --es5",
     "compile.test-app": "node ../../node_modules/typescript/lib/tsc -p tsconfig.json",
