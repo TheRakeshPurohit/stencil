@@ -5,6 +5,7 @@
   "types": "test-dist/types/components.d.ts",
   "collection": "test-dist/collection/collection-manifest.json",
   "scripts": {
+    "start": "node ../../bin/stencil build --dev --watch --serve --es5",
     "build.app": "npm run compile.test-app && node ../../bin/stencil build --debug --es5",
     "compile.test-app": "node ../../node_modules/typescript/lib/tsc -p tsconfig.json",
     "build.prerender": "node ../../bin/stencil build --config test-prerender/stencil.config-prerender.ts --prerender --debug && node test-prerender/no-script-build.js",
@@ -14,13 +15,12 @@
     "build.invisible-prehydration.true": "node ../../bin/stencil build --config test-invisible-prehydration/stencil.invisiblePrehydrationTrue.config.ts --debug",
     "build.invisible-prehydration.false": "node ../../bin/stencil build --config test-invisible-prehydration/stencil.invisiblePrehydrationFalse.config.ts --debug",
     "karma": "karma start karma.config.js",
-    "karma.chrome": "karma start karma.config.js --browsers=Chrome --single-run=false",
-    "karma.firefox": "karma start karma.config.js --browsers=Firefox --single-run=false",
     "karma.prod": "npm run build.sibling && npm run build.invisible-prehydration && npm run build.app && npm run karma.webpack && npm run build.prerender && npm run karma",
-    "karma.ie": "karma start karma.config.js --browsers=IE --single-run=false",
-    "karma.edge": "karma start karma.config.js --browsers=Edge --single-run=false",
     "karma.webpack": "webpack-cli --config test-app/esm-webpack/webpack.config.js && webpack-cli --config test-app/custom-elements-output-webpack/webpack.config.js && webpack-cli --config test-app/custom-elements-output-tag-class-different/webpack.config.js && webpack-cli --config test-app/custom-elements-delegates-focus/webpack.config.js",
-    "start": "node ../../bin/stencil build --dev --watch --serve --es5"
+    "karma.chrome": "karma start karma.config.js --browsers=Chrome --single-run=false",
+    "karma.edge": "karma start karma.config.js --browsers=Edge --single-run=false",
+    "karma.firefox": "karma start karma.config.js --browsers=Firefox --single-run=false",
+    "karma.ie": "karma start karma.config.js --browsers=IE --single-run=false",
   },
   "devDependencies": {
     "@stencil/less": "^1.0.0",
