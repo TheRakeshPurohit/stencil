@@ -22,7 +22,7 @@ export const config: Config = {
     },
     {
       type: 'dist-custom-elements',
-      dir: 'test-components',
+      dir: 'test-custom-elements',
     },
   ],
   globalScript: 'test-app/global.ts',
