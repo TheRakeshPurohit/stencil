@@ -99,7 +99,7 @@ export function setupDomTests(document: Document) {
    * Create web component for executing tests against
    */
   function renderTest(url: string, app: HTMLElement, waitForStencilReady: number) {
-    url = '/base/www' + url;
+    url = '/base/test-www' + url;
 
     return new Promise<HTMLElement>((resolve, reject) => {
       try {

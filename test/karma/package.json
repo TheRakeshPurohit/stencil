@@ -20,7 +20,7 @@
     "karma.chrome": "karma start karma.config.js --browsers=Chrome --single-run=false",
     "karma.edge": "karma start karma.config.js --browsers=Edge --single-run=false",
     "karma.firefox": "karma start karma.config.js --browsers=Firefox --single-run=false",
-    "karma.ie": "karma start karma.config.js --browsers=IE --single-run=false",
+    "karma.ie": "karma start karma.config.js --browsers=IE --single-run=false"
   },
   "devDependencies": {
     "@stencil/less": "^1.0.0",

@@ -97,11 +97,11 @@ module.exports = function (config) {
       'test-app/**/*.spec.ts',
       'test-app/util.ts',
       'test-app/assets/angular.min.js',
-      { pattern: 'www/**/*', watched: false, included: false, served: true, nocache: true, type: 'module' },
+      { pattern: 'test-www/**/*', watched: false, included: false, served: true, nocache: true, type: 'module' },
     ],
 
     proxies: {
-      '/': '/base/www/',
+      '/': '/base/test-www/',
       // '/build/testsibling.js': '/base/www/noscript.js',
       // '/esm-webpack/main.js': '/base/www/noscript.js',
     },

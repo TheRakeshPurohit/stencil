@@ -10,7 +10,7 @@ async function run() {
     prettyHtml: true,
   });
 
-  const filePath = path.join(__dirname, '..', 'www', 'prerender', 'index.html');
+  const filePath = path.join(__dirname, '..', 'test-www', 'prerender', 'index.html');
   fs.writeFileSync(filePath, results.html);
 
   console.log('prerendered karma test');

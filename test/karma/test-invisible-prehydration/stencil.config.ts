@@ -6,7 +6,7 @@ export const config: Config = {
   outputTargets: [
     {
       type: 'www',
-      dir: '../www',
+      dir: '../test-www',
       empty: false,
       indexHtml: 'prehydrated-styles.html',
       serviceWorker: null,

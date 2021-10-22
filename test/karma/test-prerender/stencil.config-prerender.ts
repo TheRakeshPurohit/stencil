@@ -7,7 +7,7 @@ export const config: Config = {
   outputTargets: [
     {
       type: 'www',
-      dir: '../www',
+      dir: '../test-www',
       baseUrl: 'https://karma.stenciljs.com/prerender',
       serviceWorker: null,
       empty: false,

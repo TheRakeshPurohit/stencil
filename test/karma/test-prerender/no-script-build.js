@@ -5,8 +5,8 @@
 const fs = require('fs');
 const path = require('path');
 
-const wwwWithScriptPath = path.join(__dirname, '..', 'www', 'prerender', 'index.html');
-const wwwNoScriptPath = path.join(__dirname, '..', 'www', 'prerender', 'index-no-script.html');
+const wwwWithScriptPath = path.join(__dirname, '..', 'test-www', 'prerender', 'index.html');
+const wwwNoScriptPath = path.join(__dirname, '..', 'test-www', 'prerender', 'index-no-script.html');
 
 const wwwWithScript = fs.readFileSync(wwwWithScriptPath, 'utf8');
 

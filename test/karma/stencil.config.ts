@@ -15,6 +15,7 @@ export const config: Config = {
       type: 'www',
       empty: false,
       copy: [{ src: '**/*.html' }, { src: '**/*.css' }, { src: 'noscript.js' }],
+      dir: 'test-www'
     },
     {
       type: 'dist',
