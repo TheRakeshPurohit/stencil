@@ -1,4 +1,4 @@
-import { addHostEventListeners } from '@runtime';
+import { BUILD } from '@app-data';
 
 import type * as d from '../../declarations';
 
@@ -6,7 +6,7 @@ let customError: d.ErrorHandler;
 
 export const cmpModules = new Map<string, { [exportName: string]: d.ComponentConstructor }>();
 
-const getModule = (tagName: string): d.ComponentConstructor => {
+const getModule = (tagName: string): d.ComponentConstructor | null => {
   if (typeof tagName === 'string') {
     tagName = tagName.toLowerCase();
     const cmpModule = cmpModules.get(tagName);
@@ -17,7 +17,11 @@ const getModule = (tagName: string): d.ComponentConstructor => {
   return null;
 };
 
-export const loadModule = (cmpMeta: d.ComponentRuntimeMeta, _hostRef: d.HostRef, _hmrVersionId?: string): any => {
+export const loadModule = (
+  cmpMeta: d.ComponentRuntimeMeta,
+  _hostRef: d.HostRef,
+  _hmrVersionId?: string,
+): d.ComponentConstructor | null => {
   return getModule(cmpMeta.$tagName$);
 };
 
@@ -52,7 +56,7 @@ export const win = window;
 export const doc = win.document;
 
 export const readTask = (cb: Function) => {
-  process.nextTick(() => {
+  nextTick(() => {
     try {
       cb();
     } catch (e) {
@@ -62,7 +66,7 @@ export const readTask = (cb: Function) => {
 };
 
 export const writeTask = (cb: Function) => {
-  process.nextTick(() => {
+  nextTick(() => {
     try {
       cb();
     } catch (e) {
@@ -72,7 +76,7 @@ export const writeTask = (cb: Function) => {
 };
 
 const resolved = /*@__PURE__*/ Promise.resolve();
-export const nextTick = /*@__PURE__*/ (cb: () => void) => resolved.then(cb);
+export const nextTick = (cb: () => void) => resolved.then(cb);
 
 const defaultConsoleError = (e: any) => {
   if (e != null) {
@@ -96,8 +100,6 @@ export const consoleDevInfo = (..._: any[]) => {
 
 export const setErrorHandler = (handler: d.ErrorHandler) => (customError = handler);
 
-/*hydrate context start*/ export const Context = {}; /*hydrate context end*/
-
 export const plt: d.PlatformRuntime = {
   $flags$: 0,
   $resourcesUrl$: '',
@@ -118,7 +120,7 @@ export const setPlatformHelpers = (helpers: {
   Object.assign(plt, helpers);
 };
 
-export const supportsShadow = false;
+export const supportsShadow = BUILD.shadowDom;
 
 export const supportsListenerOptions = false;
 
@@ -127,6 +129,7 @@ export const supportsConstructableStylesheets = false;
 const hostRefs: WeakMap<d.RuntimeRef, d.HostRef> = new WeakMap();
 
 export const getHostRef = (ref: d.RuntimeRef) => hostRefs.get(ref);
+export const deleteHostRef = (ref: d.RuntimeRef) => hostRefs.delete(ref);
 
 export const registerInstance = (lazyInstance: any, hostRef: d.HostRef) =>
   hostRefs.set((hostRef.$lazyInstance$ = lazyInstance), hostRef);
@@ -143,7 +146,6 @@ export const registerHost = (elm: d.HostElement, cmpMeta: d.ComponentRuntimeMeta
   hostRef.$onReadyPromise$ = new Promise((r) => (hostRef.$onReadyResolve$ = r));
   elm['s-p'] = [];
   elm['s-rc'] = [];
-  addHostEventListeners(elm, hostRef, cmpMeta.$listeners$, false);
   return hostRefs.set(elm, hostRef);
 };
 
@@ -171,8 +173,6 @@ export {
   forceUpdate,
   Fragment,
   getAssetPath,
-  getConnect,
-  getContext,
   getElement,
   getMode,
   getRenderingRef,
@@ -186,5 +186,6 @@ export {
   renderVdom,
   setAssetPath,
   setMode,
+  setNonce,
   setValue,
 } from '@runtime';

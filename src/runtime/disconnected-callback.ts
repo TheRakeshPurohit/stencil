@@ -3,12 +3,21 @@ import { getHostRef, plt } from '@platform';
 
 import type * as d from '../declarations';
 import { PLATFORM_FLAGS } from './runtime-constants';
+import { rootAppliedStyles } from './styles';
 import { safeCall } from './update-component';
 
-export const disconnectedCallback = (elm: d.HostElement) => {
+const disconnectInstance = (instance: any) => {
+  if (BUILD.lazyLoad && BUILD.disconnectedCallback) {
+    safeCall(instance, 'disconnectedCallback');
+  }
+  if (BUILD.cmpDidUnload) {
+    safeCall(instance, 'componentDidUnload');
+  }
+};
+
+export const disconnectedCallback = async (elm: d.HostElement) => {
   if ((plt.$flags$ & PLATFORM_FLAGS.isTmpDisconnected) === 0) {
     const hostRef = getHostRef(elm);
-    const instance: any = BUILD.lazyLoad ? hostRef.$lazyInstance$ : elm;
 
     if (BUILD.hostListener) {
       if (hostRef.$rmListeners$) {
@@ -17,16 +26,26 @@ export const disconnectedCallback = (elm: d.HostElement) => {
       }
     }
 
-    // clear CSS var-shim tracking
-    if (BUILD.cssVarShim && plt.$cssShim$) {
-      plt.$cssShim$.removeHost(elm);
+    if (!BUILD.lazyLoad) {
+      disconnectInstance(elm);
+    } else if (hostRef?.$lazyInstance$) {
+      disconnectInstance(hostRef.$lazyInstance$);
+    } else if (hostRef?.$onReadyPromise$) {
+      hostRef.$onReadyPromise$.then(() => disconnectInstance(hostRef.$lazyInstance$));
     }
+  }
 
-    if (BUILD.lazyLoad && BUILD.disconnectedCallback) {
-      safeCall(instance, 'disconnectedCallback');
-    }
-    if (BUILD.cmpDidUnload) {
-      safeCall(instance, 'componentDidUnload');
-    }
+  /**
+   * Remove the element from the `rootAppliedStyles` WeakMap
+   */
+  if (rootAppliedStyles.has(elm)) {
+    rootAppliedStyles.delete(elm);
+  }
+
+  /**
+   * Remove the shadow root from the `rootAppliedStyles` WeakMap
+   */
+  if (elm.shadowRoot && rootAppliedStyles.has(elm.shadowRoot as unknown as Element)) {
+    rootAppliedStyles.delete(elm.shadowRoot as unknown as Element);
   }
 };

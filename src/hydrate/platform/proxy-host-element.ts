@@ -1,18 +1,32 @@
+import { BUILD } from '@app-data';
 import { consoleError, getHostRef } from '@platform';
 import { getValue, parsePropertyValue, setValue } from '@runtime';
 import { CMP_FLAGS, MEMBER_FLAGS } from '@utils';
 
 import type * as d from '../../declarations';
 
-export function proxyHostElement(elm: d.HostElement, cmpMeta: d.ComponentRuntimeMeta): void {
+export function proxyHostElement(elm: d.HostElement, cstr: d.ComponentConstructor): void {
+  const cmpMeta = cstr.cmpMeta;
+
   if (typeof elm.componentOnReady !== 'function') {
     elm.componentOnReady = componentOnReady;
   }
   if (typeof elm.forceUpdate !== 'function') {
     elm.forceUpdate = forceUpdate;
   }
-  if (cmpMeta.$flags$ & CMP_FLAGS.shadowDomEncapsulation) {
-    (elm as any).shadowRoot = elm;
+
+  /**
+   * Only attach shadow root if there isn't one already
+   */
+  if (!elm.shadowRoot && !!(cmpMeta.$flags$ & CMP_FLAGS.shadowDomEncapsulation)) {
+    if (BUILD.shadowDelegatesFocus) {
+      elm.attachShadow({
+        mode: 'open',
+        delegatesFocus: !!(cmpMeta.$flags$ & CMP_FLAGS.shadowDelegatesFocus),
+      });
+    } else {
+      elm.attachShadow({ mode: 'open' });
+    }
   }
 
   if (cmpMeta.$members$ != null) {
@@ -20,16 +34,41 @@ export function proxyHostElement(elm: d.HostElement, cmpMeta: d.ComponentRuntime
 
     const members = Object.entries(cmpMeta.$members$);
 
-    members.forEach(([memberName, m]) => {
-      const memberFlags = m[0];
-
+    members.forEach(([memberName, [memberFlags, metaAttributeName]]) => {
       if (memberFlags & MEMBER_FLAGS.Prop) {
-        const attributeName = m[1] || memberName;
-        const attrValue = elm.getAttribute(attributeName);
+        const attributeName = metaAttributeName || memberName;
+        let attrValue = elm.getAttribute(attributeName);
+
+        /**
+         * allow hydrate parameters that contain a simple object, e.g.
+         * ```ts
+         * import { renderToString } from 'component-library/hydrate';
+         * await renderToString(`<car-detail car=${JSON.stringify({ year: 1234 })}></car-detail>`);
+         * ```
+         */
+        if (
+          (attrValue?.startsWith('{') && attrValue.endsWith('}')) ||
+          (attrValue?.startsWith('[') && attrValue.endsWith(']'))
+        ) {
+          try {
+            attrValue = JSON.parse(attrValue);
+          } catch (e) {
+            /* ignore */
+          }
+        }
+
+        const { get: origGetter, set: origSetter } =
+          Object.getOwnPropertyDescriptor((cstr as any).prototype, memberName) || {};
+        let parsedAttrValue: any;
 
         if (attrValue != null) {
-          const parsedAttrValue = parsePropertyValue(attrValue, memberFlags);
-          hostRef.$instanceValues$.set(memberName, parsedAttrValue);
+          parsedAttrValue = parsePropertyValue(attrValue, memberFlags);
+          if (origSetter) {
+            // we have an original setter, so let's set the value via that.
+            origSetter.apply(elm, [parsedAttrValue]);
+            parsedAttrValue = origGetter ? origGetter.apply(elm) : parsedAttrValue;
+          }
+          hostRef?.$instanceValues$?.set(memberName, parsedAttrValue);
         }
 
         const ownValue = (elm as any)[memberName];
@@ -37,16 +76,23 @@ export function proxyHostElement(elm: d.HostElement, cmpMeta: d.ComponentRuntime
           // we've got an actual value already set on the host element
           // let's add that to our instance values and pull it off the element
           // so the getter/setter kicks in instead, but still getting this value
-          hostRef.$instanceValues$.set(memberName, ownValue);
+          hostRef?.$instanceValues$?.set(memberName, ownValue);
           delete (elm as any)[memberName];
         }
 
-        // create the getter/setter on the host element for this property name
+        // if we have a parsed value from an attribute use that first.
+        // otherwise if we have a getter already applied, use that.
+        // we'll do this for both the element and the component instance.
+        // this makes sure attribute values take priority over default values.
+        function getter(this: d.RuntimeRef) {
+          return ![undefined, null].includes(parsedAttrValue)
+            ? parsedAttrValue
+            : origGetter
+              ? origGetter.apply(this)
+              : getValue(this, memberName);
+        }
         Object.defineProperty(elm, memberName, {
-          get(this: d.RuntimeRef) {
-            // proxyComponent, get value
-            return getValue(this, memberName);
-          },
+          get: getter,
           set(this: d.RuntimeRef, newValue) {
             // proxyComponent, set value
             setValue(this, memberName, newValue, cmpMeta);
@@ -54,11 +100,17 @@ export function proxyHostElement(elm: d.HostElement, cmpMeta: d.ComponentRuntime
           configurable: true,
           enumerable: true,
         });
+
+        Object.defineProperty((cstr as any).prototype, memberName, {
+          get: getter,
+          configurable: true,
+          enumerable: true,
+        });
       } else if (memberFlags & MEMBER_FLAGS.Method) {
         Object.defineProperty(elm, memberName, {
           value(this: d.HostElement, ...args: any[]) {
             const ref = getHostRef(this);
-            return ref.$onInstancePromise$.then(() => ref.$lazyInstance$[memberName](...args)).catch(consoleError);
+            return ref?.$onInstancePromise$?.then(() => ref?.$lazyInstance$?.[memberName](...args)).catch(consoleError);
           },
         });
       }
@@ -67,7 +119,7 @@ export function proxyHostElement(elm: d.HostElement, cmpMeta: d.ComponentRuntime
 }
 
 function componentOnReady(this: d.HostElement) {
-  return getHostRef(this).$onReadyPromise$;
+  return getHostRef(this)?.$onReadyPromise$;
 }
 
 function forceUpdate(this: d.HostElement) {
